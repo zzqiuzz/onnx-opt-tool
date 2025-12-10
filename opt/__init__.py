@@ -1,3 +1,3 @@
-from onnx_optimizer import ONNXOptimizer
-from pattern import *
-from config import Config
+from .onnx_optimizer import ONNXOptimizer 
+from .config import Config
+from .pattern import *

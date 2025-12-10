@@ -1,11 +1,11 @@
-from onnx import GraphProto
-from typing import Dict, List, Optional, Iterable
+import onnx
+from typing import Dict, List, Optional
 from .onnx_node import ONNXNode
 from ..logger import logger
 import networkx as nx
 
 class ONNXGraph:
-    def __init__(self, graph_proto: GraphProto):
+    def __init__(self, graph_proto: onnx.GraphProto):
         self.proto = graph_proto
         self.nodes: Dict[int, ONNXNode] = {}  # node.id -> ONNXNode
         self.name_to_nodes: Dict[str, List[ONNXNode]] = {}  # output name -> nodes

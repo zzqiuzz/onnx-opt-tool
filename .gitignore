@@ -1,0 +1,110 @@
+# ========================= Python 核心编译/运行产物 =========================
+# 字节码文件（Python编译后生成）
+*.py[cod]
+# Python 3.7+ 缓存目录
+__pycache__/
+# 单个文件的缓存备份（.pyc的另一种形式）
+*$py.class
+
+# ========================= 虚拟环境 =========================
+# 通用虚拟环境目录（venv/env/ENV等）
+venv/
+env/
+ENV/
+.venv/
+.env/
+# conda虚拟环境
+conda-env/
+# pipenv虚拟环境
+Pipfile.lock
+# poetry虚拟环境
+.venv/
+poetry.lock
+
+# ========================= 包构建/分发产物 =========================
+# 打包生成的目录
+.vscode/
+build/
+dist/
+# egg-info（setuptools打包产物）
+*.egg-info/
+*.egg
+# wheel包
+*.whl
+# sdist源码包
+*.tar.gz
+
+# ========================= IDE/编辑器配置 =========================
+# VSCode
+.vscode/
+.vs/
+# PyCharm/IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+# Vim
+*.swp
+*.swo
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+
+# ========================= 操作系统通用文件 =========================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN
+# Linux
+*.swp
+.Trash-*
+
+# ========================= 日志/缓存/临时文件 =========================
+# 日志文件
+*.log
+logs/
+# 缓存文件
+*.cache
+.cache/
+# 临时文件
+*.tmp
+*.temp
+tmp/
+temp/
+# Jupyter Notebook 检查点（避免提交临时运行记录）
+.ipynb_checkpoints/
+*_checkpoint.ipynb
+
+# ========================= 敏感/本地配置文件 =========================
+# 环境变量文件（存储密钥、数据库地址等）
+.env
+.env.local
+.env.*.local
+# 本地配置文件（非通用配置）
+config/local_config.py
+# 数据库文件（如SQLite）
+*.db
+*.sqlite3
+# 测试覆盖率报告
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+nosetests.xml
+
+# ========================= 其他特殊场景 =========================
+# 性能分析文件
+*.prof
+# pyinstaller打包产物
+*.spec
+# 第三方依赖自动生成的文件（如requirements.txt若手动维护可注释）
+# requirements.txt

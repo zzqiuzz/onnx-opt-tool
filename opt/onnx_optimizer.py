@@ -1,10 +1,13 @@
+import logging
+
 from typing import List, Optional
 from .onnx_helper import ONNXModel
 from .pattern import Pattern
 from .graph_matcher import GraphMatcher
 from .fusion_executor import FusionExecutor
 from .config import Config, default_config
-from .logger import logger
+
+logger = logging.getLogger(__name__)
 
 class ONNXOptimizer:
     def __init__(self, config: Optional[Config] = None):
@@ -13,17 +16,16 @@ class ONNXOptimizer:
         self.matcher = GraphMatcher()
         self.executor = FusionExecutor()
 
-        # 初始化日志级别
-        logger.set_level(self.config.log_level)
-
-    def load_model(self, path: str) -> bool:
+    def load_model(self, onnx_path: str) -> bool:
         try:
-            self.model = ONNXModel.load(path)
-            graph = self.model.get_graph()
-            if graph:
-                self.matcher.set_graph(graph)
-                self.executor.set_graph(graph)
-                logger.info(f"Model loaded successfully: {path}")
+            self.model = ONNXModel.load(onnx_path)
+            digraph  = self.model.get_digraph()
+            gs_graph = self.model.get_gs_graph() 
+            if digraph and gs_graph:
+                self.matcher.set_graph(digraph)
+                self.executor.set_graph(gs_graph)
+                self.executor.set_gs_nodes(self.model.gs_nodes)
+                logger.info(f"Model loaded successfully: {onnx_path}")
                 return True
             else:
                 logger.error("Failed to load graph from model.")
@@ -41,35 +43,26 @@ class ONNXOptimizer:
             self.add_pattern(pattern)
 
     def optimize(self, iterations: int = 1) -> bool:
-        """执行优化（支持迭代优化）"""
-        if not self.model or not self.model.get_graph():
+        if not self.model or not self.model.get_digraph():
             logger.error("No model loaded.")
             return False
 
         logger.info(f"Starting optimization with {iterations} iterations...")
         all_success = True
-
         for i in range(iterations):
             logger.info(f"\n--- Optimization Iteration {i+1}/{iterations} ---")
-            
-            # 1. 执行匹配
             match_results = self.matcher.match_all(allow_overlap=self.config.allow_overlap)
             if not match_results:
                 logger.info("No matches found, optimization complete.")
                 break
-
-            # 2. 执行融合
             success = self.executor.execute_all(match_results)
             if not success:
                 logger.error(f"Iteration {i+1} failed.")
                 all_success = False
                 break
-
-            # 3. 可视化（如果开启）
-            if self.config.visualize:
-                # TODO: 实现匹配结果可视化（如使用networkx+matplotlib）
-                logger.info("Visualization not implemented yet.")
-
+            
+            self.model.update_onnx_model_proto(self.executor.get_gs_model_proto())
+            
         logger.info(f"\nOptimization finished. Success: {all_success}")
         return all_success
 

@@ -1,7 +1,9 @@
+import logging
 from typing import List, Dict, Optional, Set
 from .onnx_helper import ONNXGraph, ONNXNode 
 from .pattern import Pattern
-from .logger import logger
+
+logger = logging.getLogger(__name__)
 
 class MatchResult:
     def __init__(self, pattern: Pattern, matched_nodes: List[ONNXNode]):

@@ -4,6 +4,7 @@ from typing import Dict, Any, List, Optional
 class ONNXNode:
     def __init__(self, node_proto: NodeProto):
         self.proto = node_proto
+        self.name = node_proto.name
         self.id = id(node_proto)  # 使用内存地址作为唯一ID
         self.op_type = node_proto.op_type
         self.inputs = list(node_proto.input)

@@ -3,10 +3,10 @@ from .constraints import OpTypeConstraint
 from ..onnx_helper import ONNXNode, ONNXGraph
 from typing import List, Optional
 
-class ConvBNPattern(Pattern):
+class ConvTransBNPattern(Pattern):
     def __init__(self):
-        super().__init__(name="ConvBN", priority=10)
-        self.add_constraint(OpTypeConstraint("Conv"))
+        super().__init__(name="ConvTransBNPattern", priority=10)
+        self.add_constraint(OpTypeConstraint("ConvTranspose"))
 
     def match(self, node: ONNXNode, graph: ONNXGraph) -> Optional[List[ONNXNode]]:
         # 1. 检查当前节点是否为Conv
@@ -18,7 +18,7 @@ class ConvBNPattern(Pattern):
         if len(conv_outputs) != 1:
             return None
 
-        bn_candidates = graph.name_to_nodes.get(conv_outputs[0], [])
+        bn_candidates = graph.get_successors(node)
         bn_node = None
         for candidate in bn_candidates:
             if candidate.is_op("BatchNormalization"):
@@ -27,11 +27,11 @@ class ConvBNPattern(Pattern):
 
         if not bn_node:
             return None
-
+ 
         # 3. 检查BN的输入是否只有Conv的输出（简化版，不考虑其他输入如scale/bias）
         if len(bn_node.inputs) < 1 or bn_node.inputs[0] != conv_outputs[0]:
             return None
 
         return [node, bn_node]
     
-__all__ = ["ConvBNPattern"]
+__all__ = ["ConvTransBNPattern"]
