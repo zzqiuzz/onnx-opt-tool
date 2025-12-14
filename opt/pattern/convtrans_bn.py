@@ -3,6 +3,7 @@ from .constraints import OpTypeConstraint
 from ..onnx_helper import ONNXNode, ONNXGraph
 from typing import List, Optional
 
+@Pattern.register()
 class ConvTransBNPattern(Pattern):
     def __init__(self):
         super().__init__(name="ConvTransBNPattern", priority=10)
@@ -32,6 +33,6 @@ class ConvTransBNPattern(Pattern):
         if len(bn_node.inputs) < 1 or bn_node.inputs[0] != conv_outputs[0]:
             return None
 
-        return [node, bn_node]
+        return [node, bn_node] 
     
 __all__ = ["ConvTransBNPattern"]

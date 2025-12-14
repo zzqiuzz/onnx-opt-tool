@@ -9,7 +9,10 @@ class MatchResult:
     def __init__(self, pattern: Pattern, matched_nodes: List[ONNXNode]):
         self.pattern = pattern
         self.matched_nodes = matched_nodes
-        self.node_ids = {node.id for node in matched_nodes}
+        self.node_ids = {node.id for node in matched_nodes} 
+        self.inputs = [] # inputs of new subgraph
+        self.outputs = [] # outputs of new subgraph
+        self.attrs = {} # attrs of new subgraph
 
     def __repr__(self):
         return f"MatchResult(pattern={self.pattern.name}, nodes={[n.id for n in self.matched_nodes]})"
@@ -17,19 +20,20 @@ class MatchResult:
 class GraphMatcher:
     def __init__(self, graph: Optional[ONNXGraph] = None):
         self.graph = graph
-        self.patterns: List[Pattern] = []
         self.match_results: List[MatchResult] = []
 
     def set_graph(self, graph: ONNXGraph):
         self.graph = graph
 
-    def add_pattern(self, pattern: Pattern):
-        self.patterns.append(pattern)
-        # 按优先级排序（高优先级在前）
-        self.patterns.sort(key=lambda p: p.priority, reverse=True)
-
-    def clear_patterns(self):
-        self.patterns.clear()
+    @property
+    def patterns(self):
+        """
+        get all registered patterns and sort in priority priorly order. 
+        """
+        patterns = list(Pattern.REGISTER_PATTERNS.values())
+        patterns.sort(key=lambda p: p.priority, reverse=True)
+        
+        return patterns
 
     def match_all(self, allow_overlap: bool = False) -> List[MatchResult]:
         if not self.graph:
@@ -40,6 +44,7 @@ class GraphMatcher:
         matched_node_ids: Set[int] = set()
         sorted_nodes = self.graph.topological_sort()
 
+        # get all registered patterns 
         logger.info(f"Starting pattern matching on {len(sorted_nodes)} nodes with {len(self.patterns)} patterns...")
 
         for node in sorted_nodes:

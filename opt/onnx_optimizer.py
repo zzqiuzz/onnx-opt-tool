@@ -34,14 +34,6 @@ class ONNXOptimizer:
             logger.error(f"Failed to load model: {str(e)}")
             return False
 
-    def add_pattern(self, pattern: Pattern):
-        self.matcher.add_pattern(pattern)
-        logger.info(f"Added pattern: {pattern.name} (priority: {pattern.priority})")
-
-    def add_patterns(self, patterns: List[Pattern]):
-        for pattern in patterns:
-            self.add_pattern(pattern)
-
     def optimize(self, iterations: int = 1) -> bool:
         if not self.model or not self.model.get_digraph():
             logger.error("No model loaded.")
@@ -50,7 +42,7 @@ class ONNXOptimizer:
         logger.info(f"Starting optimization with {iterations} iterations...")
         all_success = True
         for i in range(iterations):
-            logger.info(f"\n--- Optimization Iteration {i+1}/{iterations} ---")
+            logger.info(f"--- Optimization Iteration {i+1}/{iterations} ---")
             match_results = self.matcher.match_all(allow_overlap=self.config.allow_overlap)
             if not match_results:
                 logger.info("No matches found, optimization complete.")
@@ -63,7 +55,7 @@ class ONNXOptimizer:
             
             self.model.update_onnx_model_proto(self.executor.get_gs_model_proto())
             
-        logger.info(f"\nOptimization finished. Success: {all_success}")
+        logger.info(f"Optimization finished. Success: {all_success}")
         return all_success
 
     def save_model(self, path: str):
