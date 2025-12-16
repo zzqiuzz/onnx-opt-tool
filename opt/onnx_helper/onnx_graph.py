@@ -44,6 +44,7 @@ class ONNXGraph:
         for initializer in self.graph_proto.initializer:
             if initializer.name == name:
                 return self.initializer2array(initializer).astype(dtype)
+        return None
             
     def get_output_shape(self) -> Dict:
         

@@ -1,4 +1,5 @@
 import logging
+import numpy as np
 
 from .base_pattern import Pattern, MatchResult
 from .constraints import OpTypeConstraint
@@ -84,40 +85,52 @@ class LayerNormPattern(Pattern):
         if pow_and_Div[1] is not div:
             return None
         
+        matched_nodes = [
+            reduce_mean1, 
+            sub, 
+            pown, 
+            reduce_mean2, 
+            add_eps, 
+            sqrt, 
+            div
+        ]
+        
         # if Div connected with Mul and Add nodes: Div -> Mul -> Add (scale and bias)
         muls = graph.get_successors(div)
+        # here mul node must be BiasMul
         if len(muls) != 1 or not muls[0].is_op("Mul"):
             return None
         mul = muls[0]
-
-        adds2 = graph.get_successors(mul)
-        if len(adds2) != 1 or not adds2[0].is_op("Add"):
-            return None
-        add_bias = adds2[0]
-
-        # final output
-        outputs = list(add_bias.outputs)
-
-        # try to find scale and bias tensor names (constants)
         scale_name = None
-        bias_name = None
         # Mul inputs: one should be Div output, other is scale const
         for inp in mul.inputs:
             if inp not in div.outputs:
                 scale_name = inp
                 break
-        
+        bias_array = None
         scale_array = graph.get_initializer_by_name(scale_name)
-        for inp in add_bias.inputs:
-            if inp not in mul.outputs:
-                bias_name = inp
-                break
-        bias_array = graph.get_initializer_by_name(bias_name)
-        # get scale array
-        
-        
-        # get bias array
-
+        if scale_array is None:
+            outputs = div.outputs
+        else: 
+            matched_nodes.append(mul)
+            adds2 = graph.get_successors(mul)
+            # here add node must be BiasAdd
+            if len(adds2) != 1 or not adds2[0].is_op("Add"):
+                return None
+            add_bias = adds2[0]
+            # try to find scale and bias tensor names (constants) 
+            bias_name = None
+            for inp in add_bias.inputs:
+                if inp not in mul.outputs:
+                    bias_name = inp
+                    break
+            bias_array = graph.get_initializer_by_name(bias_name)
+            outputs = list(add_bias.outputs)
+            if bias_array is None:
+                outputs = mul.outputs 
+            else:
+                matched_nodes.append(add_bias)
+             
         # attempt to read epsilon from Add (one input is a scalar constant)
         eps = None
         for inp in add_eps.inputs:
@@ -129,21 +142,15 @@ class LayerNormPattern(Pattern):
         if not axis:
             logger.warning("Parse axis for LayerNorm failed.")
             return None
+        ln_axis = len(node_output_shape) - len(axis)
+        if scale_array is None:
+            scale_array = np.ones(node_output_shape[ln_axis:], np.float32)
+        if bias_array is None:
+            bias_array = np.zeros(node_output_shape[ln_axis:], np.float32)
         
-        matched_nodes = [
-            reduce_mean1, 
-            sub, 
-            pown, 
-            reduce_mean2, 
-            add_eps, 
-            sqrt, 
-            div, 
-            mul, 
-            add_bias
-        ]
         attrs = {
             "epsilon": eps.item(), 
-            "axis" : len(node_output_shape) - len(axis)
+            "axis" : ln_axis
         }
         
         return MatchResult(pattern=self, 
