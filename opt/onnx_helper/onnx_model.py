@@ -31,9 +31,10 @@ class ONNXModel:
     def save(self, path: str):
         if not self.onnx_model_proto:
             logger.error("Cannot save empty model.")
-            return
+            return False
         logger.info(f"Saving optimized ONNX model to {path}")
         onnx.save(self.onnx_model_proto, path)
+        return True
 
     def get_digraph(self) -> Optional[ONNXGraph]:
         return self.digraph

@@ -1,4 +1,7 @@
 import onnx
+import numpy as np
+
+from onnx import numpy_helper
 from typing import Dict, List, Optional
 from .onnx_node import ONNXNode
 from ..logger import logger
@@ -6,16 +9,17 @@ import networkx as nx
 
 class ONNXGraph:
     def __init__(self, graph_proto: onnx.GraphProto):
-        self.proto = graph_proto
+        self.graph_proto = graph_proto
         self.nodes: Dict[int, ONNXNode] = {}  # node.id -> ONNXNode
         self.name_to_nodes: Dict[str, List[ONNXNode]] = {}  # output name -> nodes
         self.graph: nx.DiGraph = nx.DiGraph()
+        self.output_shape = self.get_output_shape()
 
         self._build_graph()
 
     def _build_graph(self):
         # 1. 创建所有节点对象
-        for node_proto in self.proto.node:
+        for node_proto in self.graph_proto.node:
             node = ONNXNode(node_proto)
             self.nodes[node.id] = node
             self.graph.add_node(node.id, op_type=node.op_type)
@@ -32,6 +36,52 @@ class ONNXGraph:
                 if inp in self.name_to_nodes:
                     for prev_node in self.name_to_nodes[inp]:
                         self.graph.add_edge(prev_node.id, node.id, tensor=inp)
+
+    def initializer2array(self, initializer) -> np.array:
+        return numpy_helper.to_array(initializer)
+        
+    def get_initializer_by_name(self, name : str, dtype = np.float32):
+        for initializer in self.graph_proto.initializer:
+            if initializer.name == name:
+                return self.initializer2array(initializer).astype(dtype)
+            
+    def get_output_shape(self) -> Dict:
+        
+        def parse_tensor_shape(tensor_proto: onnx.ValueInfoProto) -> list:
+            shape = []
+            tensor_type = tensor_proto.type.tensor_type
+            if not tensor_type.HasField("shape"):
+                return shape  # 无形状信息
+            for dim in tensor_type.shape.dim:
+                if dim.HasField("dim_value"):
+                    # 静态维度（如224、3等）
+                    shape.append(dim.dim_value)
+                elif dim.HasField("dim_param"):
+                    # 动态维度（如batch_size、?等）
+                    shape.append(dim.dim_param)
+                else:
+                    # 未知维度
+                    shape.append(None)
+            return shape
+        
+        shape_mapping = {}
+        # 1. 处理模型输入
+        for tensor in self.graph_proto.input:
+            shape_mapping[tensor.name] = parse_tensor_shape(tensor)
+
+        # 2. 处理模型输出
+        for tensor in self.graph_proto.output:
+            shape_mapping[tensor.name] = parse_tensor_shape(tensor)
+
+        # 3. 处理中间张量（value_info/tensor_value_info）
+        for tensor in self.graph_proto.value_info:
+            shape_mapping[tensor.name] = parse_tensor_shape(tensor)
+
+        return shape_mapping
+            
+    def get_output_shape_by_name(self, name : str) -> List:
+        assert self.output_shape, f"tensor shape is {self.output_shape}"
+        return self.output_shape[name]
 
     def get_node_by_id(self, node_id: int) -> Optional[ONNXNode]:
         return self.nodes.get(node_id)

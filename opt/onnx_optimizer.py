@@ -1,8 +1,7 @@
 import logging
 
-from typing import List, Optional
-from .onnx_helper import ONNXModel
-from .pattern import Pattern
+from typing import Optional
+from .onnx_helper import ONNXModel 
 from .graph_matcher import GraphMatcher
 from .fusion_executor import FusionExecutor
 from .config import Config, default_config
@@ -60,9 +59,10 @@ class ONNXOptimizer:
 
     def save_model(self, path: str):
         if self.model:
-            self.model.save(path)
+            return self.model.save(path)
         else:
             logger.error("No model to save.")
+        return False
 
     def get_optimized_model(self) -> Optional[ONNXModel]:
         return self.model

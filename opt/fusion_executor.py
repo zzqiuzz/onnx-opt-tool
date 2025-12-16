@@ -63,6 +63,7 @@ class FusionExecutor:
     def set_gs_nodes(self, gs_nodes: dict):
         self.gs_nodes = gs_nodes
 
+    # TODO factory pattern
     def _fuse_convtrans_bn(self, match_result: MatchResult) -> bool:
         # gs_graph = gs.import_onnx(self.onnx_model_proto)
         if len(match_result.matched_nodes) != 2:
@@ -73,7 +74,11 @@ class FusionExecutor:
         gs_convtrasn_node       = self.gs_nodes[convtrans_node.name]
         gs_bn_node              = self.gs_nodes[bn_node.name]
         self.graph.fuse_convtrans_bn(gs_convtrasn_node, gs_bn_node)
-        self.graph.cleanup().toposort()
+        # self.graph.cleanup().toposort()
+        
+    def _fuse_layernorm(self, match_result: MatchResult) -> bool:
+        self.graph.fuse_layernorm(match_result)
+        # self.graph.cleanup().toposort()
 
     def execute(self, match_result: MatchResult) -> bool:
         if not self.graph:
@@ -84,15 +89,14 @@ class FusionExecutor:
         logger.info(f"Executing fusion for pattern '{pattern_name}'")
 
         try:
-            if pattern_name == "ConvBN":
-                self._fuse_conv_bn(match_result)
-            elif pattern_name == "ConvTransBNPattern":
+            if pattern_name == "ConvTransBNPattern":
                 self._fuse_convtrans_bn(match_result) 
-            elif pattern_name == "ConvReLU":
-                 self._fuse_conv_relu(match_result)
+            elif pattern_name == "LayerNormPattern":
+                self._fuse_layernorm(match_result)
             else:
                 logger.warning(f"No fusion handler for pattern '{pattern_name}'")
                 return False
+            self.graph.cleanup().toposort()
             self.gs_fusion = True
             return True
         except Exception as e:

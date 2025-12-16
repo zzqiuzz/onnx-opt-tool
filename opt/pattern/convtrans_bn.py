@@ -1,7 +1,6 @@
-from .base_pattern import Pattern
+from .base_pattern import Pattern, MatchResult
 from .constraints import OpTypeConstraint
-from ..onnx_helper import ONNXNode, ONNXGraph
-from typing import List, Optional
+from ..onnx_helper import ONNXNode, ONNXGraph   
 
 @Pattern.register()
 class ConvTransBNPattern(Pattern):
@@ -9,12 +8,12 @@ class ConvTransBNPattern(Pattern):
         super().__init__(name="ConvTransBNPattern", priority=10)
         self.add_constraint(OpTypeConstraint("ConvTranspose"))
 
-    def match(self, node: ONNXNode, graph: ONNXGraph) -> Optional[List[ONNXNode]]:
-        # 1. 检查当前节点是否为Conv
+    def match(self, node: ONNXNode, graph: ONNXGraph) -> MatchResult | None:
+        # check if current node is ConvTranspose
         if not all(ct.check(node, graph) for ct in self.constraints):
             return None
-
-        # 2. 获取Conv的所有输出节点（应该只有一个BN）
+        
+        inputs = node.inputs
         conv_outputs = node.outputs
         if len(conv_outputs) != 1:
             return None
@@ -28,11 +27,17 @@ class ConvTransBNPattern(Pattern):
 
         if not bn_node:
             return None
- 
-        # 3. 检查BN的输入是否只有Conv的输出（简化版，不考虑其他输入如scale/bias）
+  
+        outputs = bn_node.outputs
         if len(bn_node.inputs) < 1 or bn_node.inputs[0] != conv_outputs[0]:
-            return None
+            return None 
 
-        return [node, bn_node] 
+        return MatchResult(
+            pattern=self,
+            matched_nodes=[node, bn_node],
+            inputs=inputs,
+            outputs=outputs,
+            attrs={}
+        )
     
 __all__ = ["ConvTransBNPattern"]

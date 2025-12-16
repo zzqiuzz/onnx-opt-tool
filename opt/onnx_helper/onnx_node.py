@@ -34,6 +34,9 @@ class ONNXNode:
 
     def is_op(self, op_type: str) -> bool:
         return self.op_type == op_type
+    
+    def has_intersection(self, list1: List) -> bool:
+        return bool(set(self.inputs) & set(list1)) or False
 
     def __repr__(self):
         return f"ONNXNode(id={self.id}, op={self.op_type}, inputs={self.inputs}, outputs={self.outputs})"

@@ -1,3 +1,4 @@
+import argparse
 from opt import ONNXOptimizer, Config
 from opt.logger import setup_global_logging
 
@@ -5,6 +6,12 @@ logger = setup_global_logging()
 logger.info("===== GO =====")
 
 def main():
+    parser = argparse.ArgumentParser(description="Optimize an ONNX model and save the result.")
+    parser.add_argument("input_model", help="Path to input ONNX model to optimize")
+    parser.add_argument("output_model", help="Path where the optimized ONNX model will be saved")
+    parser.add_argument("--iterations", "-n", type=int, default=1, help="Number of optimization iterations (default: 1)")
+    args = parser.parse_args()
+
     config = Config(
         allow_overlap=False,
         log_level=10,  # DEBUG级别
@@ -12,17 +19,16 @@ def main():
     )
     
     optimizer = ONNXOptimizer(config=config)
-
-    # onnx_path = "/home/uto/workspace/my/onnx-opt-tool/conv_trans_bn_original.onnx"
-    onnx_path = "/home/zhengzhe/workspace/uto/onnx-opt-tool/custom_model_with_bn.onnx"
-    if not optimizer.load_model(onnx_path):
-        logger.info("Failed to load model.")
+ 
+    if not optimizer.load_model(args.input_model):
+        logger.error(f"Failed to load model: {args.input_model}")
         return
-    if optimizer.optimize(iterations=1):
-        output_path = "/home/zhengzhe/workspace/uto/onnx-opt-tool/custom_model_with_bn_optimized_model.onnx"
-        # output_path = "optimized_model.onnx"
-        optimizer.save_model(output_path)
-        logger.info(f"Optimized model saved to: {output_path}")
+
+    if optimizer.optimize(iterations=args.iterations):
+        if optimizer.save_model(args.output_model):
+            logger.info(f"Optimized model saved to: {args.output_model}")
+        else:
+            logger.error(f"Failed to save optimized model to: {args.output_model}")
     else:
         logger.info("Optimization failed.")
         
