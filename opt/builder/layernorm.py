@@ -45,9 +45,17 @@ def fuse_layernorm(self, match_result : MatchResult):
     
     # create LayerNormalization node. If your target runtime doesn't have "LayerNormalization",
     # you can instead create the classic subgraph. Here we show the single op case:
-    ln_node = self.layer(op="LayerNormalization",
-                        name=output_name + "_LayerNorm",
-                        inputs=[inputs, scale, bias],
-                        outputs=[outputs],
-                        attrs=attrs)
+    if False:
+        ln_node = self.layer(op="LayerNormalization",
+                            name=output_name + "_LayerNorm",
+                            inputs=[inputs, scale, bias],
+                            outputs=[outputs],
+                            attrs=attrs)
+    else:
+        eps = gs.Constant(name= input_name + "_ln_eps", values=np.array(attrs["epsilon"], dtype=np.float32))
+        ln_node = self.layer(op="NvLayerNormPlugin",
+                    name=output_name + "_LayerNorm",
+                    inputs=[inputs, scale, bias, eps],
+                    outputs=[outputs],
+                    )
     return ln_node

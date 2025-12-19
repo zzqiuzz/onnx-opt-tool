@@ -93,3 +93,4 @@ class MatchResult:
     def __repr__(self) -> str:
         """Custom string representation (preserves original format)"""
         return f"MatchResult(pattern={self.pattern.name}, nodes={[n.id for n in self.matched_nodes]})"
+    

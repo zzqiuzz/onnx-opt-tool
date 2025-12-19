@@ -73,12 +73,10 @@ class FusionExecutor:
         convtrans_node, bn_node = match_result.matched_nodes
         gs_convtrasn_node       = self.gs_nodes[convtrans_node.name]
         gs_bn_node              = self.gs_nodes[bn_node.name]
-        self.graph.fuse_convtrans_bn(gs_convtrasn_node, gs_bn_node)
-        # self.graph.cleanup().toposort()
+        self.graph.fuse_convtrans_bn(gs_convtrasn_node, gs_bn_node) 
         
     def _fuse_layernorm(self, match_result: MatchResult) -> bool:
-        self.graph.fuse_layernorm(match_result)
-        # self.graph.cleanup().toposort()
+        self.graph.fuse_layernorm(match_result) 
 
     def execute(self, match_result: MatchResult) -> bool:
         if not self.graph:
@@ -92,7 +90,9 @@ class FusionExecutor:
             if pattern_name == "ConvTransBNPattern":
                 self._fuse_convtrans_bn(match_result) 
             elif pattern_name == "LayerNormPattern":
-                self._fuse_layernorm(match_result)
+                self.graph.fuse_layernorm(match_result)
+            elif pattern_name == "CustomAttnPattern":
+                self.graph.fuse_customattn(match_result)
             else:
                 logger.warning(f"No fusion handler for pattern '{pattern_name}'")
                 return False

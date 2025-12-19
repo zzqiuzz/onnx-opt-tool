@@ -34,6 +34,7 @@ def main():
         
     # TODO
     # compare outputs of optimized onnx with previous one
+    # to be ingrated with onnx_infer
 
 if __name__ == "__main__":
     main()
