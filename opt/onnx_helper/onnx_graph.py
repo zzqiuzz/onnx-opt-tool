@@ -45,6 +45,9 @@ class ONNXGraph:
             if initializer.name == name:
                 return self.initializer2array(initializer).astype(dtype)
         return None
+    
+    def is_constant_input(self, input_name : str) -> bool:
+        return self.get_initializer_by_name(input_name) is not None
             
     def get_output_shape(self) -> Dict:
         

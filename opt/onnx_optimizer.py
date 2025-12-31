@@ -33,26 +33,23 @@ class ONNXOptimizer:
             logger.error(f"Failed to load model: {str(e)}")
             return False
 
-    def optimize(self, iterations: int = 1) -> bool:
+    def optimize(self) -> bool:
         if not self.model or not self.model.get_digraph():
             logger.error("No model loaded.")
             return False
-
-        logger.info(f"Starting optimization with {iterations} iterations...")
-        all_success = True
-        for i in range(iterations):
-            logger.info(f"--- Optimization Iteration {i+1}/{iterations} ---")
-            match_results = self.matcher.match_all(allow_overlap=self.config.allow_overlap)
-            if not match_results:
-                logger.info("No matches found, optimization complete.")
-                break
-            success = self.executor.execute_all(match_results)
-            if not success:
-                logger.error(f"Iteration {i+1} failed.")
-                all_success = False
-                break
-            
-            self.model.update_onnx_model_proto(self.executor.get_gs_model_proto())
+ 
+        all_success = True 
+        match_results = self.matcher.match_all(allow_overlap=self.config.allow_overlap)
+        
+        if not match_results:
+            logger.info("No matches found, optimization complete.")
+            all_success = False
+        success = self.executor.execute_all(match_results)
+        
+        if not success: 
+            all_success = False 
+        
+        self.model.update_onnx_model_proto(self.executor.get_gs_model_proto())
             
         logger.info(f"Optimization finished. Success: {all_success}")
         return all_success

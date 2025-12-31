@@ -9,7 +9,6 @@ def main():
     parser = argparse.ArgumentParser(description="Optimize an ONNX model and save the result.")
     parser.add_argument("input_model", help="Path to input ONNX model to optimize")
     parser.add_argument("output_model", help="Path where the optimized ONNX model will be saved")
-    parser.add_argument("--iterations", "-n", type=int, default=1, help="Number of optimization iterations (default: 1)")
     args = parser.parse_args()
 
     config = Config(
@@ -24,7 +23,7 @@ def main():
         logger.error(f"Failed to load model: {args.input_model}")
         return
 
-    if optimizer.optimize(iterations=args.iterations):
+    if optimizer.optimize():
         if optimizer.save_model(args.output_model):
             logger.info(f"Optimized model saved to: {args.output_model}")
         else:
