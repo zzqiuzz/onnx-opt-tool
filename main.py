@@ -2,14 +2,19 @@ import argparse
 from opt import ONNXOptimizer, Config
 from opt.logger import setup_global_logging
 
-logger = setup_global_logging()
-logger.info("===== GO =====")
+
 
 def main():
     parser = argparse.ArgumentParser(description="Optimize an ONNX model and save the result.")
     parser.add_argument("input_model", help="Path to input ONNX model to optimize")
     parser.add_argument("output_model", help="Path where the optimized ONNX model will be saved")
+    parser.add_argument("-l", "--log-level", type=int, default=1,
+                        help="Log level (0=DEBUG, 1=INFO, 2=WARNING, 3=ERROR)")
     args = parser.parse_args()
+    
+    # 配置全局日志
+    logger = setup_global_logging(log_level=args.log_level)
+    logger.info("===== GO =====")
 
     config = Config(
         allow_overlap=False,

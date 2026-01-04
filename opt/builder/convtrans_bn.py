@@ -1,26 +1,36 @@
 import numpy as np
 import onnx_graphsurgeon as gs
 
+from ..pattern import MatchResult
+
 @gs.Graph.register()
-def fuse_convtrans_bn(self, convtrans_node: gs.Node, bn_node: gs.Node):
+def fuse_convtrans_bn(self, match_result: MatchResult):
     """
-    Args:
-        convtrans_node: ConvTranspose 节点
-        bn_node: 紧随其后的 BatchNorm 节点
-    
+    Args: 
+        match_result: 包含ConvTranspose和BatchNormalization节点的匹配结果
     Returns:
         返回融合后的新 ConvTranspose 节点
     """
-        
-    # 获取原始节点输入/输出
-    convtrans_input  = convtrans_node.inputs[0]
-    convtrans_weight = convtrans_node.inputs[1]
-    convtrans_bias   = convtrans_node.inputs[2] if len(convtrans_node.inputs) > 2 else None
-    # disconnect input's output link to convtrans_node
-    convtrans_input.outputs.remove(convtrans_node) 
-    bn_output = bn_node.outputs[0]
-    # disconnect bn_output's input link to bn_node
-    bn_output.inputs.remove(bn_node)  
+         
+    convtrans_node, bn_node = match_result.matched_nodes
+    
+    convtrans_input_name  = match_result.inputs[0]
+    convtrans_weight_name = match_result.inputs[1]
+    convtrans_bias_name   = match_result.inputs[2] if len(match_result.inputs) > 2 else None 
+    convtrans_input = self.tensors().get(convtrans_input_name)
+    convtrans_weight = self.tensors().get(convtrans_weight_name)
+    convtrans_bias = self.tensors().get(convtrans_bias_name)
+    
+    bn_output_name = match_result.outputs[0]
+    bn_output = self.tensors().get(bn_output_name) 
+    
+    for outp in convtrans_input.outputs[::]:
+        if outp.name in match_result.node_names:
+            convtrans_input.outputs.remove(outp)
+    
+    for inp in bn_output.inputs[::]:
+        if inp.name in match_result.node_names:
+            bn_output.inputs.remove(inp)
 
     # ConvTranspose权重维度：ONNX标准 [C_in, C_out/groups, kH, kW]
     weight = convtrans_weight.values
@@ -29,12 +39,25 @@ def fuse_convtrans_bn(self, convtrans_node: gs.Node, bn_node: gs.Node):
     C_out = C_out_per_group * groups  # 输出通道数 = 每组输出通道 * 分组数
 
     # 校验BN参数维度与ConvTranspose输出通道匹配
-    bn_scale = bn_node.inputs[1].values
-    if bn_scale.shape[0] != C_out:
-        raise ValueError(f"BN scale维度({bn_scale.shape[0]})与ConvTranspose输出通道({C_out})不匹配！")
-    bn_bias = bn_node.inputs[2].values
-    bn_mean = bn_node.inputs[3].values
-    bn_var = bn_node.inputs[4].values
+    scale_name = bn_node.inputs[1] 
+    bias_name = bn_node.inputs[2]
+    mean_name = bn_node.inputs[3]
+    var_name = bn_node.inputs[4]
+    scale = self.tensors().get(scale_name)
+    bias = self.tensors().get(bias_name)
+    mean = self.tensors().get(mean_name)
+    var = self.tensors().get(var_name)
+    
+    scale = scale.values
+    bias = bias.values
+    mean = mean.values
+    var = var.values
+    
+    
+    
+    if scale.shape[0] != C_out:
+        raise ValueError(f"BN scale维度({scale.shape[0]})与ConvTranspose输出通道({C_out})不匹配！")
+   
     epsilon = bn_node.attrs.get("epsilon", 1e-5)
 
     # 处理ConvTranspose无bias的场景（初始bias为C_out维度的0）
@@ -47,9 +70,9 @@ def fuse_convtrans_bn(self, convtrans_node: gs.Node, bn_node: gs.Node):
             raise ValueError(f"ConvTranspose bias维度({bias.shape[0]})与输出通道({C_out})不匹配！")
 
     # BN核心公式：y = (x - mean)/sqrt(var + eps) * scale + bias
-    denom = np.sqrt(bn_var + epsilon)
-    bn_scale_fused = bn_scale / denom
-    bn_bias_fused = bn_bias - bn_mean * bn_scale_fused
+    denom = np.sqrt(var + epsilon)
+    bn_scale_fused = scale / denom
+    bn_bias_fused = bias - mean * bn_scale_fused
 
     # 适配分组卷积的广播形状：[1, C_out/groups, 1, 1]（匹配weight的[C_in, C_out/groups, kH, kW]）
     # 分组场景下：bn_scale_fused先reshape为[groups, C_out_per_group]，再展平为[1, C_out_per_group*groups, 1, 1]会广播错误

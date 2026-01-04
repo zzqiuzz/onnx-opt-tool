@@ -15,23 +15,18 @@ class ONNXOptimizer:
         self.matcher = GraphMatcher()
         self.executor = FusionExecutor()
 
-    def load_model(self, onnx_path: str) -> bool:
-        try:
-            self.model = ONNXModel.load(onnx_path)
-            digraph  = self.model.get_digraph()
-            gs_graph = self.model.get_gs_graph() 
-            if digraph and gs_graph:
-                self.matcher.set_graph(digraph)
-                self.executor.set_graph(gs_graph)
-                self.executor.set_gs_nodes(self.model.gs_nodes)
-                logger.info(f"Model loaded successfully: {onnx_path}")
-                return True
-            else:
-                logger.error("Failed to load graph from model.")
-                return False
-        except Exception as e:
-            logger.error(f"Failed to load model: {str(e)}")
-            return False
+    def load_model(self, onnx_path: str) -> bool: 
+        self.model = ONNXModel.load(onnx_path)
+        digraph  = self.model.get_digraph()
+        gs_graph = self.model.get_gs_graph() 
+        if digraph and gs_graph:
+            self.matcher.set_graph(digraph)
+            self.executor.set_graph(gs_graph) 
+            logger.info(f"Model loaded successfully: {onnx_path}")
+            return True
+        else:
+            logger.error("Failed to load graph from model.")
+            return False 
 
     def optimize(self) -> bool:
         if not self.model or not self.model.get_digraph():

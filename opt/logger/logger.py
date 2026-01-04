@@ -1,9 +1,17 @@
 import os
 import logging
 from logging.handlers import RotatingFileHandler
+from datetime import datetime
 
-
-def setup_global_logging():
+# 数字到 logging 级别的映射
+log_level_map = {
+    0: logging.DEBUG,
+    1: logging.INFO,
+    2: logging.WARNING,
+    3: logging.ERROR
+}
+ 
+def setup_global_logging(log_level=1):
     """配置全局日志：同时输出到控制台和文件，格式对齐整洁
 
     将处理器安装到根日志器（root logger），确保使用
@@ -18,8 +26,11 @@ def setup_global_logging():
     6. 行号固定4位数字（右对齐，不足补空格）
     """
     # 1. 使用根logger，所有模块的logger都会向根logger传播
+    
+    # 获取对应的日志级别
+    log_level = log_level_map.get(log_level, logging.INFO)  # 默认 INFO
     logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)  # 全局最低日志级别
+    logger.setLevel(log_level)  # 全局最低日志级别
 
     # 避免重复添加handler（多次调用该函数时）
     if logger.handlers:
@@ -36,7 +47,7 @@ def setup_global_logging():
     # - funcName:20  → 函数名占20字符
     # - lineno:4d    → 行号占4位数字（右对齐，如  123、1234）
     log_format = (
-        "%(asctime)s - %(levelname)-5s - %(name)-20s "
+        "%(asctime)s - %(levelname)-5s - %(name)-26s "
         "- [%(filename)-20s:%(funcName)-10s:%(lineno)4d] - %(message)s"
     )
 
@@ -46,19 +57,24 @@ def setup_global_logging():
 
     # 4. 控制台Handler（输出INFO及以上级别）
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
+    console_handler.setLevel(log_level)
     console_handler.setFormatter(console_formatter)
 
     # 5. 文件Handler（输出DEBUG及以上级别，支持日志滚动）
     log_dir = "logs"
     os.makedirs(log_dir, exist_ok=True)  # 确保日志目录存在
+    
+    # 生成基于时间的日志文件名
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_filename = f"app_{timestamp}.log"
+    
     file_handler = RotatingFileHandler(
-        filename=os.path.join(log_dir, "app.log"),
+        filename=os.path.join(log_dir, log_filename),
         maxBytes=1024 * 1024,  # 单个日志文件最大1MB
         backupCount=3,         # 最多保留3个备份文件
         encoding="utf-8"       # 支持中文日志
     )
-    file_handler.setLevel(logging.DEBUG)
+    file_handler.setLevel(log_level)
     file_handler.setFormatter(file_formatter)
 
     # 6. 添加处理器到根logger

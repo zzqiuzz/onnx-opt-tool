@@ -1,11 +1,12 @@
 import onnx
 import numpy as np
-
+import logging
 from onnx import numpy_helper
 from typing import Dict, List, Optional
-from .onnx_node import ONNXNode
-from ..logger import logger
+from .onnx_node import ONNXNode 
 import networkx as nx
+
+logger = logging.getLogger(__name__)
 
 class ONNXGraph:
     def __init__(self, graph_proto: onnx.GraphProto):
@@ -101,8 +102,7 @@ class ONNXGraph:
         succ_ids = self.graph.successors(node.id)
         return [self.get_node_by_id(sid) for sid in succ_ids if self.get_node_by_id(sid)]
 
-    def topological_sort(self) -> List[ONNXNode]:
-        """返回拓扑排序后的节点列表"""
+    def topological_sort(self) -> List[ONNXNode]: 
         try:
             sorted_ids = list(nx.topological_sort(self.graph))
             return [self.get_node_by_id(nid) for nid in sorted_ids if self.get_node_by_id(nid)]
@@ -121,6 +121,23 @@ class ONNXGraph:
                     self.name_to_nodes[output] = [n for n in self.name_to_nodes[output] if n.id != node.id]
                     if not self.name_to_nodes[output]:
                         del self.name_to_nodes[output]
+    
+    @staticmethod             
+    def name_onnx_nodes(onnx_model_proto):
+    
+        """Assigns name to the onnx nodes if not present and return the modified status.""" 
+        graph = onnx_model_proto.graph
+        node_names = {node.name for node in graph.node}
+        start_id = len(node_names)
+        for node in graph.node:
+            if not node.name:
+                new_name = f"{node.op_type}_{start_id}"
+                while new_name in node_names:
+                    start_id += 1
+                    new_name = f"{node.op_type}_{start_id}"
+                node.name = new_name
+                node_names.add(new_name)  
+                logger.debug(f"Renaming node to {new_name}")
 
     def __repr__(self):
         return f"ONNXGraph(nodes={len(self.nodes)}, edges={self.graph.number_of_edges()})"
