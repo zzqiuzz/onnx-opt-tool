@@ -30,7 +30,7 @@ import onnx
 # which will result in an invalid subgraph. To avoid this, you can instead modify
 # the tensors to include the shape information yourself.
 
-model = onnx.load("/home/uto/workspace/demos/bevod/modelopt_normal_quant/modelopt_normal_quant_ln_fuse_plugin.onnx")
+model = onnx.load("/home/uto/workspace/my/Model-Optimizer-0.40.0/examples/bevod_hdt/normal_quant_80.onnx")
 # model = onnx.load("/home/uto/workspace/demos/bevod/layernorm_fuse/online_const_ogs_fusion_quant.onnx")
 graph = gs.import_onnx(model)
 
@@ -54,13 +54,15 @@ tensors = graph.tensors()
 # NOTE: ONNX GraphSurgeon will also accept dynamic shapes - simply set the corresponding
 # dimension(s) to `gs.Tensor.DYNAMIC`, e.g. `shape=(gs.Tensor.DYNAMIC, 3, 224, 224)`
 # graph.inputs = [tensors["2834"].to_variable(dtype=np.float32, shape=tensors["2834"].shape)]
-graph.inputs.remove(tensors["intrinsic"])
-graph.inputs.remove(tensors["img2lidar"])
-graph.outputs = [tensors["1057"].to_variable(dtype=np.float32)]
+for inp in graph.inputs[::]:
+    if inp.name != "img": 
+        graph.inputs.remove(tensors[inp.name])
+# graph.inputs.remove(tensors["img2lidar"])
+graph.outputs = [tensors["654"].to_variable(dtype=np.float32, shape=tensors["654"].shape)]
 
 # Notice that we do not need to manually modify the rest of the graph. ONNX GraphSurgeon will
 # take care of removing any unnecessary nodes or tensors, so that we are left with only the subgraph.
 graph.cleanup()
 
-onnx.save(gs.export_onnx(graph), "/home/uto/workspace/demos/bevod/modelopt_normal_quant/subgraph_ln_plugin.onnx")
+onnx.save(gs.export_onnx(graph), "/home/uto/workspace/my/Model-Optimizer-0.40.0/examples/bevod_hdt/normal_quant_80_cut.onnx")
 # onnx.save(gs.export_onnx(graph), "/home/uto/workspace/demos/bevod/layernorm_fuse/subgraph.onnx")
