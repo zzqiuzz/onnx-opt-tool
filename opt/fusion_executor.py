@@ -37,6 +37,8 @@ class FusionExecutor:
             self.graph.fuse_customattn(match_result)
         elif pattern_name == "LogDivPattern":
             self.graph.replace_log_div(match_result)
+        elif pattern_name == "MatMulAddPattern":
+            self.graph.fuse_matmuladd(match_result)
         else:
             logger.warning(f"No fusion handler for pattern '{pattern_name}'")
             return False
