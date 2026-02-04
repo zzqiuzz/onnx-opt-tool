@@ -33,8 +33,11 @@ class ONNXOptimizer:
             logger.error("No model loaded.")
             return False
  
-        all_success = True 
-        match_results = self.matcher.match_all(allow_overlap=self.config.allow_overlap)
+        all_success = True  
+        match_results = self.matcher.match_all(
+            allow_overlap=self.config.allow_overlap,
+            excluded_opt_pass=self.config.excluded_opt_pass
+        )
         
         if not match_results:
             logger.info("No matches found, optimization complete.")

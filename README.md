@@ -6,7 +6,7 @@ A small utility for optimizing ONNX graphs. It performs common subgraph fusions 
 - Fuse LayerNorm subgraphs composed of multiple small operators into `NvLayerNormPlugin`
 - Fuse attention/FFN related subgraphs into `CustomFFAttn`
 - Rewrite `log(A/B)` as `log(A) - log(B)`
-- Other optimizations for common graph patterns
+- Fuse MatMul+Add+(Relu) into `MatMulPlugin` 
 
 ## Installation
 1. Clone the repository:
@@ -36,7 +36,7 @@ Example:
 python -m opt ./models/resnet.onnx ./models/resnet_opt.onnx
 ```
 
-You can seemlessly call the api like:
+You can seamlessly call the api like:
 ```
 from opt import ONNXOptimizer
 optimizer = ONNXOptimizer()
