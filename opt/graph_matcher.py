@@ -26,7 +26,11 @@ class GraphMatcher:
         
         return patterns
 
-    def match_all(self, allow_overlap: bool = False) -> List[MatchResult]:
+    def match_all(
+        self, 
+        allow_overlap: bool = False,
+        excluded_opt_pass: list = []
+    ) -> List[MatchResult]:
         if not self.graph:
             logger.error("No graph set for matching.")
             return []
@@ -36,14 +40,15 @@ class GraphMatcher:
         sorted_nodes = self.graph.topological_sort()
 
         # get all registered patterns 
-        logger.info(f"Starting pattern matching on {len(sorted_nodes)} nodes with {len(self.patterns)} patterns...")
+        running_patterns = [pattern for pattern in self.patterns if pattern.name not in excluded_opt_pass]
+        logger.info(f"Starting pattern matching on {len(sorted_nodes)} nodes with {len(running_patterns)} patterns: {[pattern.name for pattern in running_patterns]}")
 
         for node in sorted_nodes:
             # 如果不允许重叠，跳过已匹配的节点
             if not allow_overlap and node.id in matched_node_ids:
                 continue
 
-            for pattern in self.patterns:
+            for pattern in running_patterns:
                 match_result = pattern.match(node, self.graph)
                 if match_result:
                     # 检查是否有重叠节点（如果不允许）
