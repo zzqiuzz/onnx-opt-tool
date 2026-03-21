@@ -1,6 +1,7 @@
 from .base_pattern import Pattern, MatchResult
 from .constraints import OpTypeConstraint
-from ..onnx_helper import ONNXNode, ONNXGraph   
+from ..onnx_helper import ONNXNode, ONNXGraph
+
 
 @Pattern.register()
 class ConvTransBNPattern(Pattern):
@@ -12,7 +13,7 @@ class ConvTransBNPattern(Pattern):
         # check if current node is ConvTranspose
         if not all(ct.check(node, graph) for ct in self.constraints):
             return None
-        
+
         inputs = node.inputs
         conv_outputs = node.outputs
         if len(conv_outputs) != 1:
@@ -27,17 +28,14 @@ class ConvTransBNPattern(Pattern):
 
         if not bn_node:
             return None
-  
+
         outputs = bn_node.outputs
         if len(bn_node.inputs) < 1 or bn_node.inputs[0] != conv_outputs[0]:
-            return None 
+            return None
 
         return MatchResult(
-            pattern=self,
-            matched_nodes=[node, bn_node],
-            inputs=inputs,
-            outputs=outputs,
-            attrs={}
+            pattern=self, matched_nodes=[node, bn_node], inputs=inputs, outputs=outputs, attrs={}
         )
-    
+
+
 __all__ = ["ConvTransBNPattern"]

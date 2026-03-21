@@ -3,10 +3,11 @@ import numpy as np
 import logging
 from onnx import numpy_helper
 from typing import Dict, List, Optional
-from .onnx_node import ONNXNode 
+from .onnx_node import ONNXNode
 import networkx as nx
 
 logger = logging.getLogger(__name__)
+
 
 class ONNXGraph:
     def __init__(self, graph_proto: onnx.GraphProto):
@@ -40,18 +41,18 @@ class ONNXGraph:
 
     def initializer2array(self, initializer) -> np.array:
         return numpy_helper.to_array(initializer)
-        
-    def get_initializer_by_name(self, name : str, dtype = np.float32):
+
+    def get_initializer_by_name(self, name: str, dtype=np.float32):
         for initializer in self.graph_proto.initializer:
             if initializer.name == name:
                 return self.initializer2array(initializer).astype(dtype)
         return None
-    
-    def is_constant_input(self, input_name : str) -> bool:
+
+    def is_constant_input(self, input_name: str) -> bool:
         return self.get_initializer_by_name(input_name) is not None
-            
+
     def get_output_shape(self) -> Dict:
-        
+
         def parse_tensor_shape(tensor_proto: onnx.ValueInfoProto) -> list:
             shape = []
             tensor_type = tensor_proto.type.tensor_type
@@ -68,7 +69,7 @@ class ONNXGraph:
                     # 未知维度
                     shape.append(None)
             return shape
-        
+
         shape_mapping = {}
         # 1. 处理模型输入
         for tensor in self.graph_proto.input:
@@ -83,8 +84,8 @@ class ONNXGraph:
             shape_mapping[tensor.name] = parse_tensor_shape(tensor)
 
         return shape_mapping
-            
-    def get_output_shape_by_name(self, name : str) -> List:
+
+    def get_output_shape_by_name(self, name: str) -> List:
         assert self.output_shape, f"tensor shape is {self.output_shape}"
         return self.output_shape[name]
 
@@ -102,7 +103,7 @@ class ONNXGraph:
         succ_ids = self.graph.successors(node.id)
         return [self.get_node_by_id(sid) for sid in succ_ids if self.get_node_by_id(sid)]
 
-    def topological_sort(self) -> List[ONNXNode]: 
+    def topological_sort(self) -> List[ONNXNode]:
         try:
             sorted_ids = list(nx.topological_sort(self.graph))
             return [self.get_node_by_id(nid) for nid in sorted_ids if self.get_node_by_id(nid)]
@@ -118,14 +119,15 @@ class ONNXGraph:
             # 更新 name_to_nodes
             for output in node.outputs:
                 if output in self.name_to_nodes:
-                    self.name_to_nodes[output] = [n for n in self.name_to_nodes[output] if n.id != node.id]
+                    self.name_to_nodes[output] = [
+                        n for n in self.name_to_nodes[output] if n.id != node.id
+                    ]
                     if not self.name_to_nodes[output]:
                         del self.name_to_nodes[output]
-    
-    @staticmethod             
+
+    @staticmethod
     def name_onnx_nodes(onnx_model_proto):
-    
-        """Assigns name to the onnx nodes if not present and return the modified status.""" 
+        """Assigns name to the onnx nodes if not present and return the modified status."""
         graph = onnx_model_proto.graph
         node_names = {node.name for node in graph.node}
         start_id = len(node_names)
@@ -136,7 +138,7 @@ class ONNXGraph:
                     start_id += 1
                     new_name = f"{node.op_type}_{start_id}"
                 node.name = new_name
-                node_names.add(new_name)  
+                node_names.add(new_name)
                 logger.debug(f"Renaming node to {new_name}")
 
     def __repr__(self):

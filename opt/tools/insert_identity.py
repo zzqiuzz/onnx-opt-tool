@@ -55,22 +55,24 @@ tensors = graph.tensors()
 # dimension(s) to `gs.Tensor.DYNAMIC`, e.g. `shape=(gs.Tensor.DYNAMIC, 3, 224, 224)`
 # graph.inputs = [tensors["2834"].to_variable(dtype=np.float32, shape=tensors["2834"].shape)]
 tensor_name = "1048"
-tensor = tensors[tensor_name] 
+tensor = tensors[tensor_name]
 tensor_output_node = tensor.outputs[0]
 tensor.outputs.remove(tensor_output_node)
 
-identity_layer_output = gs.Variable(name=tensor_name + "_identity_out", dtype=tensor.dtype, shape=tensor.shape)
-identity_layer = graph.layer(
-    op="Identity",
-    name=tensor_name + "_Identity",
-    inputs=[tensor],
-    outputs=[identity_layer_output]
+identity_layer_output = gs.Variable(
+    name=tensor_name + "_identity_out", dtype=tensor.dtype, shape=tensor.shape
 )
-tensor_output_node.inputs.insert(0, identity_layer_output) 
+identity_layer = graph.layer(
+    op="Identity", name=tensor_name + "_Identity", inputs=[tensor], outputs=[identity_layer_output]
+)
+tensor_output_node.inputs.insert(0, identity_layer_output)
 
 # Notice that we do not need to manually modify the rest of the graph. ONNX GraphSurgeon will
 # take care of removing any unnecessary nodes or tensors, so that we are left with only the subgraph.
 graph.cleanup()
 
-onnx.save(gs.export_onnx(graph), "/home/uto/workspace/demos/bevod/modelopt_normal_quant/subgraph_ln_plugin_identity.onnx")
+onnx.save(
+    gs.export_onnx(graph),
+    "/home/uto/workspace/demos/bevod/modelopt_normal_quant/subgraph_ln_plugin_identity.onnx",
+)
 # onnx.save(gs.export_onnx(graph), "/home/uto/workspace/demos/bevod/layernorm_fuse/subgraph.onnx")

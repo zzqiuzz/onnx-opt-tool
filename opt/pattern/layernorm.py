@@ -4,31 +4,33 @@ import numpy as np
 from .base_pattern import Pattern, MatchResult
 from .constraints import OpTypeConstraint
 from ..onnx_helper import ONNXNode, ONNXGraph
-from typing import List, Optional 
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
- 
+
+
 @Pattern.register()
 class LayerNormPattern(Pattern):
-    '''  
-                ---ReduceMean --     Pow - ReduceMean - Add - Sqrt                            |
-            /                 \  /                               \                            |
-        Input                   Sub                                Div - (Mul - Add) - Output |  --> Input -> LayerNorm -> Output
-            \                 /  \                               /                            |
-                ----------------     -----------------------------                            |
-    '''
+    """
+            ---ReduceMean --     Pow - ReduceMean - Add - Sqrt                            |
+        /                 \  /                               \                            |
+    Input                   Sub                                Div - (Mul - Add) - Output |  --> Input -> LayerNorm -> Output
+        \                 /  \                               /                            |
+            ----------------     -----------------------------                            |
+    """
+
     def __init__(self):
         super().__init__(name="LayerNormPattern", priority=10)
         self.add_constraint(OpTypeConstraint("ReduceMean"))
 
     def match(self, node: ONNXNode, graph: ONNXGraph) -> Optional[List[ONNXNode]]:
         """
-            Match the LayerNorm subgraph described in the class docstring.
-            Returns MatchResult with:
-              - matched_nodes: the nodes in the matched subgraph (ordered)
-              - inputs: list with the main input tensor name
-              - outputs: list with the final output tensor name
-              - attrs: extra info like epsilon, scale_name, bias_name (if found)
+        Match the LayerNorm subgraph described in the class docstring.
+        Returns MatchResult with:
+          - matched_nodes: the nodes in the matched subgraph (ordered)
+          - inputs: list with the main input tensor name
+          - outputs: list with the final output tensor name
+          - attrs: extra info like epsilon, scale_name, bias_name (if found)
         """
         if not all(ct.check(node, graph) for ct in self.constraints):
             return None
@@ -84,17 +86,9 @@ class LayerNormPattern(Pattern):
         # ensure Div consumes the Sub result and sqrt result (order-agnostic)
         if pow_and_Div[1] is not div:
             return None
-        
-        matched_nodes = [
-            reduce_mean1, 
-            sub, 
-            pown, 
-            reduce_mean2, 
-            add_eps, 
-            sqrt, 
-            div
-        ]
-        
+
+        matched_nodes = [reduce_mean1, sub, pown, reduce_mean2, add_eps, sqrt, div]
+
         # if Div connected with Mul and Add nodes: Div -> Mul -> Add (scale and bias)
         muls = graph.get_successors(div)
         # here mul node must be BiasMul
@@ -111,14 +105,14 @@ class LayerNormPattern(Pattern):
         scale_array = graph.get_initializer_by_name(scale_name)
         if scale_array is None:
             outputs = div.outputs
-        else: 
+        else:
             matched_nodes.append(mul)
             adds2 = graph.get_successors(mul)
             # here add node must be BiasAdd
             if len(adds2) != 1 or not adds2[0].is_op("Add"):
                 return None
             add_bias = adds2[0]
-            # try to find scale and bias tensor names (constants) 
+            # try to find scale and bias tensor names (constants)
             bias_name = None
             for inp in add_bias.inputs:
                 if inp not in mul.outputs:
@@ -127,16 +121,16 @@ class LayerNormPattern(Pattern):
             bias_array = graph.get_initializer_by_name(bias_name)
             outputs = list(add_bias.outputs)
             if bias_array is None:
-                outputs = mul.outputs 
+                outputs = mul.outputs
             else:
                 matched_nodes.append(add_bias)
-             
+
         # attempt to read epsilon from Add (one input is a scalar constant)
         eps = None
         for inp in add_eps.inputs:
-            if inp not in reduce_mean2.outputs: 
+            if inp not in reduce_mean2.outputs:
                 eps = graph.get_initializer_by_name(inp)
-                          
+
         # parse axis from ReduceMean node
         axis = reduce_mean1.attrs.get("axes", None)
         if not axis:
@@ -147,16 +141,16 @@ class LayerNormPattern(Pattern):
             scale_array = np.ones(node_output_shape[ln_axis:], np.float32)
         if bias_array is None:
             bias_array = np.zeros(node_output_shape[ln_axis:], np.float32)
-        
-        attrs = {
-            "epsilon": eps.item(), 
-            "axis" : ln_axis
-        }
-        
-        return MatchResult(pattern=self, 
-                           matched_nodes=matched_nodes, 
-                           inputs=[main_input, scale_array, bias_array], 
-                           outputs=outputs, 
-                           attrs=attrs)
+
+        attrs = {"epsilon": eps.item(), "axis": ln_axis}
+
+        return MatchResult(
+            pattern=self,
+            matched_nodes=matched_nodes,
+            inputs=[main_input, scale_array, bias_array],
+            outputs=outputs,
+            attrs=attrs,
+        )
+
 
 __all__ = ["LayerNormPattern"]

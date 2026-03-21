@@ -1,10 +1,11 @@
 from .base_pattern import Pattern, MatchResult
 from .constraints import OpTypeConstraint
-from ..onnx_helper import ONNXNode, ONNXGraph   
+from ..onnx_helper import ONNXNode, ONNXGraph
+
 
 @Pattern.register()
 class LogDivPattern(Pattern):
-    '''
+    """
         To be configured with config file for each Project
         This pattern is expecially matched for Bevod model optimization, 
         to transform 
@@ -14,23 +15,24 @@ class LogDivPattern(Pattern):
                   Div ---- Log --- output    ===>                    Div --- output
                   /                                                  /
         input2 ---                                 input2 --- Log ---
-    '''
+    """
+
     def __init__(self):
         super().__init__(name="LogDivPattern", priority=10)
         self.add_constraint(OpTypeConstraint("Log"))
 
-    def match(self, node: ONNXNode, graph: ONNXGraph) -> MatchResult | None: 
+    def match(self, node: ONNXNode, graph: ONNXGraph) -> MatchResult | None:
         if not all(ct.check(node, graph) for ct in self.constraints):
             return None
- 
+
         if len(node.inputs) < 1 or len(node.outputs) != 1:
             return None
 
         # only one node precedes the Log node
         div_node = None
-        preds = graph.get_predecessors(node) 
+        preds = graph.get_predecessors(node)
         if preds[0].is_op("Div"):
-            div_node = preds[0] 
+            div_node = preds[0]
 
         if not div_node:
             return None
@@ -46,7 +48,8 @@ class LogDivPattern(Pattern):
             matched_nodes=[div_node, node],
             inputs=div_node.inputs,
             outputs=node.outputs,
-            attrs={}
+            attrs={},
         )
-    
+
+
 __all__ = ["LogDivPattern"]

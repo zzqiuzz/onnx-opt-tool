@@ -1,11 +1,9 @@
 import logging
 from typing import List, Optional, Set, Dict, Any
-from .onnx_helper import ONNXGraph, ONNXNode 
+from .onnx_helper import ONNXGraph, ONNXNode
 from .pattern import Pattern, MatchResult
 
-
 logger = logging.getLogger(__name__)
-
 
 
 class GraphMatcher:
@@ -19,17 +17,15 @@ class GraphMatcher:
     @property
     def patterns(self):
         """
-        get all registered patterns and sort in priority-first order. 
+        get all registered patterns and sort in priority-first order.
         """
         patterns = list(Pattern.REGISTER_PATTERNS.values())
         patterns.sort(key=lambda p: p.priority, reverse=True)
-        
+
         return patterns
 
     def match_all(
-        self, 
-        allow_overlap: bool = False,
-        excluded_opt_pass: list = []
+        self, allow_overlap: bool = False, excluded_opt_pass: list = []
     ) -> List[MatchResult]:
         if not self.graph:
             logger.error("No graph set for matching.")
@@ -39,9 +35,13 @@ class GraphMatcher:
         matched_node_ids: Set[int] = set()
         sorted_nodes = self.graph.topological_sort()
 
-        # get all registered patterns 
-        running_patterns = [pattern for pattern in self.patterns if pattern.name not in excluded_opt_pass]
-        logger.info(f"Starting pattern matching on {len(sorted_nodes)} nodes with {len(running_patterns)} patterns: {[pattern.name for pattern in running_patterns]}")
+        # get all registered patterns
+        running_patterns = [
+            pattern for pattern in self.patterns if pattern.name not in excluded_opt_pass
+        ]
+        logger.info(
+            f"Starting pattern matching on {len(sorted_nodes)} nodes with {len(running_patterns)} patterns: {[pattern.name for pattern in running_patterns]}"
+        )
 
         for node in sorted_nodes:
             # 如果不允许重叠，跳过已匹配的节点
@@ -56,10 +56,12 @@ class GraphMatcher:
                         new_node_ids = match_result.node_ids
                         if new_node_ids & matched_node_ids:
                             continue  # 有重叠，跳过
- 
+
                     self.match_results.append(match_result)
                     matched_node_ids.update({} if allow_overlap else new_node_ids)
-                    logger.debug(f"Matched pattern '{pattern.name}' at nodes {match_result.node_names}")
+                    logger.debug(
+                        f"Matched pattern '{pattern.name}' at nodes {match_result.node_names}"
+                    )
                     break  # 一个节点只匹配一个最高优先级的pattern
 
         logger.info(f"Found {len(self.match_results)} matches.")

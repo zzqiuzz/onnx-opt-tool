@@ -1,6 +1,7 @@
 from onnx import NodeProto
 from typing import Dict, Any, List, Optional
 
+
 class ONNXNode:
     def __init__(self, node_proto: NodeProto):
         self.proto = node_proto
@@ -15,13 +16,13 @@ class ONNXNode:
         attrs = {}
         for attr in self.proto.attribute:
             # 简化版属性解析，仅处理常见类型
-            if attr.HasField('f'):
+            if attr.HasField("f"):
                 attrs[attr.name] = attr.f
-            elif attr.HasField('i'):
+            elif attr.HasField("i"):
                 attrs[attr.name] = attr.i
-            elif attr.HasField('s'):
-                attrs[attr.name] = attr.s.decode('utf-8')
-            elif attr.HasField('t'):
+            elif attr.HasField("s"):
+                attrs[attr.name] = attr.s.decode("utf-8")
+            elif attr.HasField("t"):
                 attrs[attr.name] = attr.t
             elif attr.floats:
                 attrs[attr.name] = list(attr.floats)
@@ -34,10 +35,9 @@ class ONNXNode:
 
     def is_op(self, op_type: str) -> bool:
         return self.op_type == op_type
-    
+
     def has_intersection(self, list1: List) -> bool:
         return bool(set(self.inputs) & set(list1)) or False
 
     def __repr__(self):
         return f"ONNXNode(id={self.id}, op={self.op_type}, inputs={self.inputs}, outputs={self.outputs})"
-    
