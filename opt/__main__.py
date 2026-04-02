@@ -7,21 +7,22 @@ def main():
     parser = argparse.ArgumentParser(description="Optimize an ONNX model and save the result.")
     parser.add_argument("input_model", help="Path to input ONNX model to optimize")
     parser.add_argument("output_model", help="Path where the optimized ONNX model will be saved")
-    parser.add_argument(
-        "-l",
-        "--log-level",
-        type=int,
-        default=1,
-        help="Log level (0=DEBUG, 1=INFO, 2=WARNING, 3=ERROR)",
-    )
+    parser.add_argument("--exclude_pass", nargs='*', default=[], help="List of optimization passes to exclude",choices=["ConvTransBNPattern", "LayerNormPattern", "CustomAttnPattern", "LogDivPattern", "MatMulAddPattern"])
+    parser.add_argument("-l", "--log-level", type=int, default=1,
+                        help="Log level (0=DEBUG, 1=INFO, 2=WARNING, 3=ERROR)")
     args = parser.parse_args()
 
     # 配置全局日志
     logger = setup_global_logging(log_level=args.log_level)
     logger.info("===== GO =====")
 
-    config = Config(allow_overlap=False, log_level=10, visualize=False)  # DEBUG级别
-
+    config = Config(
+        allow_overlap=False,
+        log_level=10,  # DEBUG级别
+        visualize=False,
+        excluded_opt_pass=args.exclude_pass
+    )
+    
     optimizer = ONNXOptimizer(config=config)
 
     if not optimizer.load_model(args.input_model):
