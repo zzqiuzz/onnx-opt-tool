@@ -8,6 +8,7 @@ def main():
     parser = argparse.ArgumentParser(description="Optimize an ONNX model and save the result.")
     parser.add_argument("input_model", help="Path to input ONNX model to optimize")
     parser.add_argument("output_model", help="Path where the optimized ONNX model will be saved")
+    parser.add_argument("--exclude_pass", nargs='*', default=[], help="List of optimization passes to exclude",choices=["ConvTransBNPattern", "LayerNormPattern", "CustomAttnPattern", "LogDivPattern", "MatMulAddPattern"])
     parser.add_argument("-l", "--log-level", type=int, default=1,
                         help="Log level (0=DEBUG, 1=INFO, 2=WARNING, 3=ERROR)")
     args = parser.parse_args()
@@ -19,7 +20,8 @@ def main():
     config = Config(
         allow_overlap=False,
         log_level=10,  # DEBUG级别
-        visualize=False
+        visualize=False,
+        excluded_opt_pass=args.exclude_pass
     )
     
     optimizer = ONNXOptimizer(config=config)

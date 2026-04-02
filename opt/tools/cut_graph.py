@@ -60,7 +60,7 @@ for inp in graph.inputs[::]:
     if inp.name != "img":
         graph.inputs.remove(tensors[inp.name])
 # graph.inputs.remove(tensors["img2lidar"])
-graph.outputs = [tensors["654"].to_variable(dtype=np.float32, shape=tensors["654"].shape)]
+graph.outputs = [tensors["502"].to_variable(dtype=np.float32, shape=tensors["502"].shape)]
 
 # Notice that we do not need to manually modify the rest of the graph. ONNX GraphSurgeon will
 # take care of removing any unnecessary nodes or tensors, so that we are left with only the subgraph.
