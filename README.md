@@ -6,7 +6,8 @@ A small utility for optimizing ONNX graphs. It performs common subgraph fusions 
 - Fuse LayerNorm subgraphs composed of multiple small operators into `NvLayerNormPlugin`
 - Fuse attention/FFN related subgraphs into `CustomFFAttn`
 - Rewrite `log(A/B)` as `log(A) - log(B)`
-- Fuse MatMul+Add+(Relu) into `MatMulPlugin` 
+- Fuse MatMul+Add+(Relu) into `MatMulPlugin`
+- Automatic onnxsim simplification before custom optimizations
 
 ## Installation
 1. Clone the repository:
@@ -36,8 +37,13 @@ Example:
 python -m opt ./models/resnet.onnx ./models/resnet_opt.onnx
 ```
 
+### Options
+- `--exclude_pass`: Exclude specific optimization passes (e.g., `--exclude_pass LayerNormPattern`)
+- `-l, --log-level`: Set log level (0=DEBUG, 1=INFO, 2=WARNING, 3=ERROR)
+- `--skip_simplify`: Skip onnxsim simplification
+
 You can seamlessly call the api like:
-```
+```python
 from opt import ONNXOptimizer
 optimizer = ONNXOptimizer()
 optimizer.load_model(input_onnx_path)

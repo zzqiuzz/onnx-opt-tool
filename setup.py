@@ -22,6 +22,8 @@ def get_install_requires():
         "setuptools>=42.0.0",
         "numpy",
         "onnx-graphsurgeon>=0.4.0",
+        "networkx",
+        "onnxsim>=0.4.0",
     ]
     if sys.version_info < (3, 9):
         requires.append("importlib-metadata>=4.0.0")
@@ -62,4 +64,9 @@ setup(
         "Operating System :: OS Independent",
     ],
     zip_safe=False,
+    entry_points={
+        "console_scripts": [
+            "onnx-opt=opt.__main__:main",
+        ],
+    },
 )
