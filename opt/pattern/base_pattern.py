@@ -2,7 +2,7 @@ import logging
 
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
-from typing import List, TypeVar, Set, Dict, Any
+from typing import List, TypeVar, Set, Dict, Any, Optional
 from .constraints import Constraints
 from ..onnx_helper import ONNXNode
 
@@ -51,8 +51,8 @@ class Pattern(ABC):
     def register(cls):
         def register_func(pattern_cls: PatternType) -> PatternType:
             if issubclass(pattern_cls, cls):
-                isinstance = pattern_cls()
-                cls.register_pattern(isinstance)
+                instance = pattern_cls()
+                cls.register_pattern(instance)
                 logger.debug(f"Pattern {pattern_cls.name} has been registered.")
             return pattern_cls
 
@@ -62,7 +62,7 @@ class Pattern(ABC):
     def match(self, node, graph) -> List:
         NotImplemented
 
-    def add_constraint(self, constraint: Constraints | None):
+    def add_constraint(self, constraint: "Optional[Constraints]"):
         if self.constraints is None:
             self.constraints = []
         self.constraints.append(constraint)

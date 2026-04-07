@@ -8,7 +8,7 @@ This is an ONNX graph optimization tool that performs subgraph fusion and operat
 - `onnx>=1.15.0` - ONNX model handling
 - `onnx-graphsurgeon>=0.4.0` - Graph manipulation and fusion
 - `numpy` - Array operations
-- `networkx` - Graph data structure for pattern matching
+- `networkx` - Graph data structure for pattern matching (loaded dynamically)
 
 ### Core Architecture
 ```
@@ -65,25 +65,18 @@ black opt/ --line-length=100
 ```
 
 ### Testing
+Tests are in the root directory:
 ```bash
 # Run all tests
-pytest
+python test_all.py
 
-# Run a single test file
-pytest tests/test_layernorm.py
-
-# Run a single test function
-pytest tests/test_layernorm.py::test_layernorm_basic
-
-# Run tests matching a pattern
-pytest -k "layernorm"
-
-# Run with verbose output
-pytest -v
-
-# Run with coverage
-pytest --cov=opt --cov-report=html
+# Run specific test files
+python test_convbn.py
+python test_convrelu.py
+python test_onnxoptimizer.py
 ```
+
+Note: The `tests/` directory is empty; tests are standalone scripts in the project root.
 
 ---
 
