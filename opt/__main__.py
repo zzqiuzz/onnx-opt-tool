@@ -29,6 +29,16 @@ def main():
 
     logger = setup_global_logging(log_level=args.log_level)
     logger.info("===== GO =====")
+    input_path = args.input_model
+    if not args.skip_simplify:
+        temp_path = args.output_model + ".simplified.onnx"
+        logger.info("Running onnxsim simplification...")
+        if simplify_onnx(args.input_model, temp_path):
+            input_path = temp_path
+            logger.info("onnxsim simplification done.")
+        else:
+            input_path = args.input_model
+            logger.warning("onnxsim simplification failed, using original input.")
 
     if not args.skip_simplify:
         temp_path = args.output_model + ".simplified.onnx"
